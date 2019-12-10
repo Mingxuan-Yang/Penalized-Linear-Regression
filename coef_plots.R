@@ -7,6 +7,7 @@ library(glmnet)
 # 1. should be able to extend the range of lambda
 # 2. add interactions checks: nrow(x) > ncol(x)
 # 3. should be able to adjust the range of lambda
+# 4. needs improve xlab
 
 mutate.inters <- function(xx, interaction_way)
 {
