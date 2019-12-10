@@ -34,7 +34,7 @@ mutate.inter <- function(xx, interactions)
   return(x)
 }
 
-reg <- function(df, response = 1, model, interactions = 1, lambda0 = seq(0, 100, by = 4))
+reg <- function(df, response = 1, model, interactions = 1, lambda0 = exp(seq(-5, 20, by = 1)))
 {
   ## df:  a data frame contains covariates and response
   ## response: which col is the response
@@ -73,7 +73,8 @@ hc_plot_returns <- function(coef, name){
       text = str_c("Coefficients of <span style=\"color:#e5b13a\"> ", name, "</span> regression"),
       style = list(fontWeight = "bold", useHTML = TRUE),
       align = "center") %>%
-    hc_tooltip(borderWidth = 1, table = TRUE, sort = TRUE)
+    hc_tooltip(borderWidth = 1, table = TRUE, sort = TRUE, 
+               valueDecimals = 4, crosshairs = T)
   
   for(i in 1:(dim(coef)[2] - 1)){
     hc_plot <- hc_plot %>%
