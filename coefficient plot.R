@@ -1,5 +1,6 @@
 library(highcharter)
 library(dplyr)
+library(stringr)
 
 # helper function to add line
 # data is the objective data set, name is "Ridge" or "Lasso"
@@ -13,7 +14,12 @@ hc_plot_returns <- function(data, name){
       text = str_c("Coefficients of <span style=\"color:#e5b13a\"> ", name, "</span> regression"),
       style = list(fontWeight = "bold", useHTML = TRUE),
       align = "center") %>% 
-    hc_tooltip(borderWidth = 1, table = TRUE, sort = TRUE)
+    hc_tooltip(borderWidth = 1, 
+               table = TRUE, 
+               sort = TRUE,
+               valueDecimals = 4,
+               crosshairs = TRUE
+               )
   
   for(i in 1:(dim(data)[2] - 1)){
     hc_plot <- hc_plot %>% 
@@ -26,3 +32,4 @@ hc_plot_returns <- function(data, name){
 hc_plot_returns_mem <- memoise::memoise(hc_plot_returns)
 
 # example: hc_plot_returns_mem(data, "Lasso")
+hc_plot_returns_mem(coef, "Lasso")
