@@ -7,14 +7,7 @@ library(glmnet)
 # 1. should be able to extend the range of lambda
 # 2. add interactions checks: nrow(x) > ncol(x)
 # 3. should be able to adjust the range of lambda
-# 4. needs improve xlab
-
-mutate.inters <- function(xx, interaction_way)
-{
-  return(do.call(cbind, combn(colnames(xx), interaction_way, FUN= function(x)
-    list(setNames(data.frame(xx[,x[1]]*xx[,x[2]]),
-                  paste(x, collapse=":")) ))))
-}
+# 4. needs to improve xlab
 
 mutate.inter <- function(xx, interactions)
 {
@@ -22,11 +15,26 @@ mutate.inter <- function(xx, interactions)
   if(interactions == 1)
   {x = xx}
   else if(interactions == 2)
-    x = cbind(xx, mutate.inters(xx, 2))
+    x = cbind(xx, do.call(cbind, combn(colnames(xx), 2, FUN= function(x)
+      list(setNames(data.frame(xx[,x[1]]*xx[,x[2]]),
+                    paste(x, collapse=":")) ))))
   else if(interactions == 3)
-  {x = cbind(xx, mutate.inters(xx, 2), mutate.inters(xx, 3))}
+  {x = cbind(xx, do.call(cbind, combn(colnames(xx), 2, FUN= function(x)
+    list(setNames(data.frame(xx[,x[1]]*xx[,x[2]]),
+                  paste(x, collapse=":")) ))), 
+    do.call(cbind, combn(colnames(xx), 3, FUN= function(x)
+                    list(setNames(data.frame(xx[,x[1]]*xx[,x[2]]*xx[,x[3]]),
+                                  paste(x, collapse=":")) ))))}
   else if(interactions == 4)
-  {x = cbind(xx, mutate.inters(xx, 2), mutate.inters(xx, 3), mutate.inters(xx, 4))}
+  {x = cbind(xx, do.call(cbind, combn(colnames(xx), 2, FUN= function(x)
+    list(setNames(data.frame(xx[,x[1]]*xx[,x[2]]),
+                  paste(x, collapse=":")) ))), 
+    do.call(cbind, combn(colnames(xx), 3, FUN= function(x)
+                    list(setNames(data.frame(xx[,x[1]]*xx[,x[2]]*xx[,x[3]]),
+                                  paste(x, collapse=":")) ))), 
+    do.call(cbind, combn(colnames(xx), 4, FUN= function(x)
+                                    list(setNames(data.frame(xx[,x[1]]*xx[,x[2]]*xx[,x[3]]*xx[,x[4]]),
+                                                  paste(x, collapse=":")) ))))}
   else
   {
     warning("We only capture 4-way interactions")
@@ -46,10 +54,10 @@ reg <- function(df, response = 1, model, interactions = 1, lambda0 = exp(seq(-5,
   ncol <- dim(df)[2]
   coef <- data.frame()
   y <- df[, response]
+  y <- scale(y)
   xx <- df[, -response]
+  xx <- scale(xx)
   x <- mutate.inter(xx, interactions)
-  #x <- cbind(1, x)
-  #colnames(x) <- c("(Intercept)", colnames(x)[-1])
   for(i in 1:length(lambda0)){
     coef[i, 1:ncol] <- c(coef(glmnet(as.matrix(x), y, lambda = lambda0[i],
                                      alpha = as.numeric(model == "Lasso")))[-1],
