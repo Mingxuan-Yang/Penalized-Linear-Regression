@@ -83,7 +83,7 @@ ui <- navbarPage(theme = shinythemes::shinytheme('cosmo'),
                                               ),
                                           ),
                                           br(),
-                                          plotOutput('bi_plot_out', height = '350px')
+                                          plotOutput('bi_plot_out', height = '250px')
                                       ),
                                       
                                       tabPanel(
@@ -92,7 +92,7 @@ ui <- navbarPage(theme = shinythemes::shinytheme('cosmo'),
                                               column(
                                                   width = 3,
                                                   selectizeInput(
-                                                      "trivariat_x",
+                                                      "trivariate_x",
                                                       label = "x-axis",
                                                       choices = 1,
                                                       multiple = FALSE
@@ -118,43 +118,11 @@ ui <- navbarPage(theme = shinythemes::shinytheme('cosmo'),
                                               )
                                           ),
                                           br(),
-                                          threejs::scatterplotThreeOutput("trivariate_plot_out", height = "400px"),
+                                          threejs::scatterplotThreeOutput("tri_plot_out", height = "400px"),
                                           helpText(
                                               style = "font-size: 12px;",
                                               "Use your mouse and trackpad to rotate the plot and zoom in or out."
                                           )
-                                      ),
-                                      
-                                      tabPanel(
-                                          title = 'Multivariate',
-                                          
-                                          sidebarLayout(
-                                              sidebarPanel(
-                                                  checkboxGroupInput(inputId = 'mul_in', label = 'Parameters to plot:',
-                                                                     choices = 1,
-                                                  div(align = 'right',actionButton('mul_button','Plot'))
-                                                  )
-                                              ),
-                                              mainPanel(
-                                                  plotOutput('mul_plot_out', height = '400px')
-                                              )
-                                          )
-                                      )
-                                  )
-                              ),
-                              
-                              ##EDA - Parameters Transformation##
-                              tabPanel(
-                                  title = 'Parameters Transformation',
-                                  sidebarLayout(
-                                      sidebarPanel(
-                                          selectizeInput(inputId = 'trans_in', 
-                                                         label = 'Parameters (include response) to transform:', 
-                                                         choices = 1),
-                                          div(align = 'right',actionButton('trans_button','Transform'))
-                                      ),
-                                      mainPanel(
-                                          DT::dataTableOutput('trans_result')
                                       )
                                   )
                               )
@@ -208,52 +176,106 @@ server <- function(input, output, session) {
         )
     }
     showModal(dataModal())
-    
-    
-    
+ 
     observeEvent(input$ok, {
         t <- try(read.csv(input$dataset_attempt$datapath))
         if ("try-error" %in% class(t)) {
             showModal(dataModal(failed = TRUE))
         } else {
             vals$dataset <- read.csv(input$dataset_attempt$datapath)
+            updateSelectizeInput(session, inputId = 'summary_in',
+                               
+                                choices = colnames(vals$dataset),
+                                selected = colnames(vals$dataset)[1],server = TRUE)
+            updateSelectizeInput(session,  "bivariate_x",
+                                 label = "x-axis",
+                                 choices = colnames(vals$dataset),
+                                 selected = colnames(vals$dataset)[1], server = TRUE)
+            updateSelectizeInput(session, "bivariate_y",
+                                 label = "y-axis",
+                                 choices = colnames(vals$dataset),
+                                 selected = colnames(vals$dataset)[1], server = TRUE)
+            updateSelectizeInput(session, "trivariate_x",
+                                 label = "x-axis",
+                                 choices = colnames(vals$dataset),
+                                 selected = colnames(vals$dataset)[1], server = TRUE)
+            updateSelectizeInput(session, "trivariate_y",
+                                 label = "y-axis",
+                                 choices = colnames(vals$dataset), server = TRUE)
+            updateSelectizeInput(session, "trivariate_z",
+                                 label = "z-axis",
+                                 choices = colnames(vals$dataset), server = TRUE)
             removeModal()
         }
     })
     
-    dataset <- reactive({vals$dataset})
-    
-    updateSelectizeInput(session, inputId = 'summary_in',
-                         label = h4('Select parameter'),
-                         choices = names(dataset),
-                         selected = names(dataset)[1],server = TRUE)
-    updateSelectizeInput(session,  "bivariate_x",
-                         label = "x-axis",
-                         choices = names(dataset),
-                         selected = names(dataset)[1], server = TRUE)
-    updateSelectizeInput(session, "bivariate_y",
-                         label = "y-axis",
-                         choices = names(dataset),
-                         selected = names(dataset)[1], server = TRUE)
-    updateSelectizeInput(session, "trivariat_x",
-                         label = "x-axis",
-                         choices = names(dataset),
-                         selected = names(dataset)[1], server = TRUE)
-    updateSelectizeInput(session, "trivariate_y",
-                         label = "y-axis",
-                         choices = names(dataset), server = TRUE)
-    updateSelectizeInput(session, "trivariate_z",
-                         label = "z-axis",
-                         choices = names(dataset), server = TRUE)
-    updateCheckboxGroupInput(session, inputId = 'mul_in', 
-                             label = 'Parameters to plot:',
-                             choices = names(dataset), 
-                             selected = names(dataset)[1:2])
-    updateSelectizeInput(session, inputId = 'trans_in', 
-                         label = 'Parameters (include response) to transform:', 
-                         choices = names(dataset), server = TRUE)
     
     
+    eda_summary <- function(par) {
+        if (is.numeric(par)) {
+            data.frame('Min.' = min(par, na.rm = T),
+                       'Mean' = mean(par, na.rm = T),
+                       'Max.' = max(par, na.rm = T),
+                       '1st Qu' = quantile(par, 0.25, na.rm = T),
+                       'Median' = median(par, na.rm = T),
+                       '3rd Qu' = quantile(par, 0.75, na.rm = T),
+                       check.names = F)
+        } else if (is.factor(par)) {
+            data.frame('Level' = names(summary(par)),
+                       'Freq' = summary(par))
+        } else {
+            data.frame('Sorry' = 'No summary for this type of variable')
+        }
+        
+    }
+    
+    
+    output$numeric_out <- DT::renderDataTable({
+        DT::datatable({
+            eda_summary(vals$dataset[,input$summary_in])
+        },
+        rownames = FALSE,
+        options = list(
+            paging = FALSE, 
+            searching = FALSE, 
+            info = FALSE, 
+            ordering = FALSE,
+            autoWidth = TRUE
+            )
+        )
+    })
+    
+    output$hist_plot_out <- renderPlot({
+        ggplot(data = vals$dataset) + 
+            geom_histogram(aes(vals$dataset[,input$summary_in]),
+                           fill = 'deepskyblue', color = 'purple') + 
+            labs(x = input$summary_in)
+    })
+    
+    output$density_plot_out <- renderPlot({
+        ggplot(data = vals$dataset, aes(x = vals$dataset[,input$summary_in])) +
+            geom_density(fill = 'deepskyblue') + 
+            labs(x = input$summary_in)
+    })
+    
+    output$bi_plot_out <- renderPlot({
+        ggplot(data = vals$dataset, aes(x = vals$dataset[,input$bivariate_x],
+                                        y = vals$dataset[,input$bivariate_y])) +
+            geom_point(color = 'deepskyblue', alpha = 0.3) + 
+            labs(x = input$bivariate_x, y = input$bivariate_y)
+    })
+    
+    
+    output$tri_plot_out <- threejs::renderScatterplotThree({
+        dat <- cbind(vals$dataset[,input$trivariate_x],
+                     vals$dataset[,input$trivariate_y],
+                     vals$dataset[,input$trivariate_z])
+        threejs::scatterplot3js(dat, size = 0.5, color = rainbow(dim(dat)[1]),
+                                axisLabels=c(input$trivariate_x,
+                                             input$trivariate_y,
+                                             input$trivariate_z))
+    })
+  
 }
 
 
