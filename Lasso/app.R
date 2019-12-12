@@ -275,6 +275,13 @@ server <- function(input, output, session) {
                                              input$trivariate_y,
                                              input$trivariate_z))
     })
+    
+    
+    
+    
+    
+    output$intro <- renderUI({HTML("Welcome to XXX. This application serves the following functions:<br/>1. XXX<br/>2. XXX<br/>3. XXX")})
+    
   
 }
 
