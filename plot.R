@@ -89,7 +89,7 @@ reg <- function(df, formula = NULL, response = 1, predictors = -1, interactions 
   
   penalty_func_list <- list(
     "Lasso" = function(x) sum(abs(x)),
-    "Ridge" = function(x) sum(x^2)
+    "Ridge" = function(x) sqrt(sum(x^2))
   )
   penalty_func <- penalty_func_list[[model]]
   
