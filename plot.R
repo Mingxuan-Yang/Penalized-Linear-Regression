@@ -5,10 +5,8 @@ library(stringr)
 library(glmnet)
 
 #### to do list:
-# 1. should be able to extend the range of lambda ::(I changed it so that it may be in better range)
-# 2. add interactions checks: nrow(x) > ncol(x) ::(No need to do so if using shrinkage methods)
 # 3. should be able to adjust the range of lambda ::(What's the difference between 1 and 3?)
-# 4. needs to improve xlab ::(Changed it so that you can choose from "log-lambda" and "prop")
+## a scroll bar, so our app will show the plots for lambda within this range
 
 ##### --- Bo added:
 # 1. needs to plot the ellipse and restriction area with a certain lambda value
@@ -37,7 +35,7 @@ mutatePower <- function(df, powers) {
 }
 
 reg <- function(df, formula = NULL, response = 1, predictors = -1, interactions = 1,
-                model = c("Ridge", "Lasso"), lambda0 = exp(seq(-10, 0, length.out = 300)),
+                model = c("Ridge", "Lasso"), lambda0 = exp(seq(-10, 10, length.out = 300)),
                 powerTransform = numeric(0))
 {
   ## df:  a data frame with covariates and response
