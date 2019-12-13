@@ -3,6 +3,7 @@ library(dplyr)
 library(purrr)
 library(stringr)
 library(glmnet)
+library(ggplot2)
 
 #### to do list:
 # 3. should be able to adjust the range of lambda ::(What's the difference between 1 and 3?)
@@ -87,9 +88,9 @@ reg <- function(df, formula = NULL, response = 1, predictors = -1, interactions 
             coef() %>% .[-1] %>% set_names(colnames(X_scaled))))
   )
   
-  func_predict <- function(new_x, lambda, ...){
+  func_predict <- function(newx, lambda, ...){
     tmp <- predict(glmnet(X_scaled, Y_scaled, lambda = lambda, alpha = ifelse(model == "Lasso", 1, 0)),
-                   newx = new_x, type = "response", ...)
+                   newx = newx, type = "response", ...)
     return (transformpower(
       tmp * attr(Y_scaled, "scaled:scale") + attr(Y_scaled, "scaled:center"),
       power_response
@@ -116,6 +117,30 @@ reg <- function(df, formula = NULL, response = 1, predictors = -1, interactions 
   
   RSS <- apply(fitted, 2, function(x) sum((org_Y - x)^2))
   RSS_ols <- sum((org_Y - fitted_ols) ^ 2)
+  
+  ellipse <- function(i, j){
+    Xs <- as.matrix(X_scaled)[, c(i,j)]
+    Xo <- as.matrix(X_scaled)[, -c(i,j)]
+    function(lambda){
+      coefs <- glmnet(X_scaled, Y_scaled, lambda = lambda, alpha = ifelse(model == "Lasso", 1, 0)) %>%
+        coef() %>% .[-1] %>% set_names(colnames(X_scaled))
+      bs <- coefs[c(i,j)]
+      bo <- coefs[-c(i,j)]
+      bc <- solve(t(Xs) %*% (Xs)) %*% t(Xs) %*% (as.matrix(Y_scaled) - Xo %*% bo)
+      k <- sum((as.matrix(Y_scaled) - Xo %*% bo - Xs %*% bc)^2)
+      eigens <- eigen(t(Xs) %*% Xs, symmetric = T)
+      res <- list(
+        xc = bc[1],
+        yc = bc[2],
+        a = sqrt(k/eigens$values[2]),
+        b = sqrt(k/eigens$values[1]),
+        phi = acos(eigens$vectors[1,2] / sqrt(sum(eigens$vectors[,2]^2)))
+      )
+      class(res) <- "ellipse"
+      return (res)
+    }
+  }
+  
   res <- list(
     formula = formula,
     response = colnames(df)[response],
@@ -128,7 +153,8 @@ reg <- function(df, formula = NULL, response = 1, predictors = -1, interactions 
     X.scale = X_scaled, Y.scale = Y_scaled,
     fun.predict = func_predict,
     fitted = fitted, fitted_ols = fitted_ols,
-    RSS = RSS, RSS_ols = RSS_ols
+    RSS = RSS, RSS_ols = RSS_ols,
+    ellipse = ellipse
   )
   class(res) <- c("reg", "list")
   return (res)
@@ -191,8 +217,27 @@ plot.reg <- function(reg_result, which = 1, x_axis = c("log-lambda", "prop")){
   hc_plot_returns_mem(reg_result$coef, reg_result$lambda, reg_result$t/reg_result$t_ols, reg_result$model)
 }
 
-predict.reg <- function(reg_result, new_x, lambda, ...){
-  reg_result$fun.predict(new_x, lambda, ...)
+predict.reg <- function(reg_result, newx, lambda, log = F, ...){
+  reg_result$fun.predict(newx, ifelse(log, exp(lambda), lambda), ...)
+}
+
+plot.ellipse <- function(ellipse, n = 1, plot = T, ...){
+  t <- seq(0, 2*pi, 0.01)
+  f <- function(k){
+    x <- ellipse$xc + ellipse$a*k/n*cos(t)*cos(ellipse$phi) - ellipse$b*k/n*sin(t)*sin(ellipse$phi)
+    y <- ellipse$yc + ellipse$a*k/n*cos(t)*sin(ellipse$phi) + ellipse$b*k/n*sin(t)*cos(ellipse$phi)
+    data.frame(k = k, x = x, y = y)
+  }
+  data <- bind_rows(lapply(1:n, f))
+  if (plot){
+    print(
+      ggplot(data) + 
+        geom_point(aes(x = x, y = y, col = factor(k)), ...) +
+        geom_point(data = data.frame(x = ellipse$xc, y = ellipse$yc), aes(x, y)) + 
+        guides(NULL)
+    )
+  }
+  return (data)
 }
 
 ### test
@@ -205,3 +250,8 @@ plot(reg(swiss, model = "Lasso", powerTransform = c(Education = 2, Catholic = 0)
 reg(swiss, model = "Lasso") -> tmp
 print(tmp)
 summary(tmp)
+plot(tmp)
+predict(tmp, newx = tmp$X, lambda = -5, log = T)
+f <- tmp$ellipse(i = 2, j = 3) #select the 2nd and 3rd variable
+f(lambda = 0.01) # plot when labmda = 0.01
+plot(f(0), n = 3, plot = T, size = 0.1)
