@@ -2,6 +2,7 @@ library(shiny)
 library(shinyjs)
 library(tidyverse)
 library(ggplot2)
+library(highcharter)
 library(glmnet)
 
 
@@ -132,13 +133,34 @@ ui <- navbarPage(theme = shinythemes::shinytheme('cosmo'),
                  
                  ###Visualization###
                  tabPanel(title = 'Visualization',
-                          icon = icon('eye-open', lib = 'glyphicon')
+                          icon = icon('eye-open', lib = 'glyphicon'),
+                          sidebarLayout(
+                            sidebarPanel(
+                              selectInput('type', label = 'Input type:',
+                                          choices = c('Formula', 'Components'),
+                                          selected = 'Formula'),
+                              conditionalPanel(
+                                condition = "input.type == Formula",
+                                textInput("formula", "Regression Formula:",
+                                            placeholder = 'Y ~ a + b + c')
+                              ),
+                              conditionalPanel(
+                                condition = 'input.type == Components',
+                                textInput('response', 'Response: (variable name or column index)',
+                                          placeholder = 'e.g.: 1 or Petal.length'),
+                                textInput('predictors', 'Predictors:(variable name or column index)',
+                                          placeholder = 'e.g.: -1 or 5:6'),
+                                textInput('interactions', 'Interactions:(the level of multiway interactions)',
+                                          placeholder = 'e.g.: 1 or 2 or 3')
+                              ),
+                              selectInput('model', 'Model type:',
+                                          choices = c('Ridge', 'Lasso'),
+                                          selected = 'Ridge'),
+                              sliderInput('lambda', 'Shrinkage Parameter Range (lambda):',
+                                          min = 0, max = exp(15), value = c(exp(-10),exp(10)))
+                            )
+                          )
                           
-                 ),
-                 
-                 ###Diagnostic###     keep it or not?
-                 tabPanel(title = 'Diagnostic',
-                          icon = icon('medkit')
                  ),
                  
                  navbarMenu('More',
@@ -246,34 +268,41 @@ server <- function(input, output, session) {
     })
     
     output$hist_plot_out <- renderPlot({
-        ggplot(data = vals$dataset) + 
-            geom_histogram(aes(vals$dataset[,input$summary_in]),
-                           fill = 'deepskyblue', color = 'purple') + 
-            labs(x = input$summary_in)
+      ggplot(data = vals$dataset) + 
+        geom_histogram(aes(vals$dataset[,input$summary_in]), 
+                       fill = "#C0C0C0", color = "black") + 
+        labs(x = input$summary_in) +
+        theme_bw(base_size = 15) + 
+        theme(panel.grid.major = element_blank(), 
+              panel.grid.minor = element_blank())
     })
     
     output$density_plot_out <- renderPlot({
-        ggplot(data = vals$dataset, aes(x = vals$dataset[,input$summary_in])) +
-            geom_density(fill = 'deepskyblue') + 
-            labs(x = input$summary_in)
+      ggplot(data = vals$dataset, aes(x = vals$dataset[,input$summary_in])) +
+        geom_density(fill = "#C0C0C0") + 
+        labs(x = input$summary_in) +
+        theme_bw(base_size = 15) + 
+        theme(panel.grid.major = element_blank(), panel.grid.minor = element_blank())
     })
     
     output$bi_plot_out <- renderPlot({
-        ggplot(data = vals$dataset, aes(x = vals$dataset[,input$bivariate_x],
-                                        y = vals$dataset[,input$bivariate_y])) +
-            geom_point(color = 'deepskyblue', alpha = 0.3) + 
-            labs(x = input$bivariate_x, y = input$bivariate_y)
+      ggplot(data = vals$dataset, aes(x = vals$dataset[,input$bivariate_x],
+                                      y = vals$dataset[,input$bivariate_y])) +
+        geom_point(color = "black") + 
+        labs(x = input$bivariate_x, y = input$bivariate_y) +
+        theme_bw(base_size = 15)
     })
     
     
     output$tri_plot_out <- threejs::renderScatterplotThree({
-        dat <- cbind(vals$dataset[,input$trivariate_x],
-                     vals$dataset[,input$trivariate_y],
-                     vals$dataset[,input$trivariate_z])
-        threejs::scatterplot3js(dat, size = 0.5, color = rainbow(dim(dat)[1]),
-                                axisLabels=c(input$trivariate_x,
-                                             input$trivariate_y,
-                                             input$trivariate_z))
+      dat <- cbind(vals$dataset[,input$trivariate_x],
+                   vals$dataset[,input$trivariate_y],
+                   vals$dataset[,input$trivariate_z])
+      threejs::scatterplot3js(dat, size = 0.2, color = "#C0C0C0",
+                              flip.y = FALSE, brush = TRUE,
+                              axisLabels=c(input$trivariate_x,
+                                           input$trivariate_y,
+                                           input$trivariate_z))
     })
     
     
