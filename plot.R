@@ -97,6 +97,11 @@ reg <- function(df, formula = NULL, response = 1, predictors = -1, interactions 
     ))
   }
   
+  cv <- cv.glmnet(X_scaled, Y_scaled)
+  cv_predict <- function(newx, ...){
+    predict(cv, newx, ...)
+  }
+  
   penalty_func_list <- list(
     "Lasso" = function(x) sum(abs(x)),
     "Ridge" = function(x) sqrt(sum(x^2))
@@ -118,7 +123,7 @@ reg <- function(df, formula = NULL, response = 1, predictors = -1, interactions 
   RSS <- apply(fitted, 2, function(x) sum((org_Y - x)^2))
   RSS_ols <- sum((org_Y - fitted_ols) ^ 2)
   
-  ellipse <- function(i, j){
+  info <- function(i, j){
     Xs <- as.matrix(X_scaled)[, c(i,j)]
     Xo <- as.matrix(X_scaled)[, -c(i,j)]
     function(lambda){
@@ -126,17 +131,21 @@ reg <- function(df, formula = NULL, response = 1, predictors = -1, interactions 
         coef() %>% .[-1] %>% set_names(colnames(X_scaled))
       bs <- coefs[c(i,j)]
       bo <- coefs[-c(i,j)]
-      bc <- solve(t(Xs) %*% (Xs)) %*% t(Xs) %*% (as.matrix(Y_scaled) - Xo %*% bo)
+      bc <- (solve(t(X_scaled) %*% (X_scaled)) %*% t(X_scaled) %*% (Y_scaled))[c(i,j)]
+      #bc <- solve(t(Xs) %*% (Xs)) %*% t(Xs) %*% (as.matrix(Y_scaled) - Xo %*% bo)
       k <- sum((as.matrix(Y_scaled) - Xo %*% bo - Xs %*% bc)^2)
       eigens <- eigen(t(Xs) %*% Xs, symmetric = T)
-      res <- list(
+      ellipse.res <- list(
         xc = bc[1],
         yc = bc[2],
         a = sqrt(k/eigens$values[2]),
         b = sqrt(k/eigens$values[1]),
         phi = acos(eigens$vectors[1,2] / sqrt(sum(eigens$vectors[,2]^2)))
       )
-      class(res) <- "ellipse"
+      class(ellipse.res) <- "ellipse"
+      t <- penalty_func(bs)
+      res <- list(ellipse = ellipse.res, tangent_point = bs, t = t, model = model)
+      class(res) <- "regvarinfo"
       return (res)
     }
   }
@@ -147,14 +156,17 @@ reg <- function(df, formula = NULL, response = 1, predictors = -1, interactions 
     predictors = colnames(df)[predictors],
     model = model,
     coef = as.data.frame(coef),
+    cv = cv,
+    cv.coef = coef(cv),
     ols = ols,
     lambda = lambda0, t = t, t_ols = t_ols,
     X = X, Y = Y,
     X.scale = X_scaled, Y.scale = Y_scaled,
     fun.predict = func_predict,
+    cv.predict = cv_predict,
     fitted = fitted, fitted_ols = fitted_ols,
     RSS = RSS, RSS_ols = RSS_ols,
-    ellipse = ellipse
+    info = info
   )
   class(res) <- c("reg", "list")
   return (res)
@@ -170,6 +182,11 @@ print.reg <- function(reg_result, nShow = 5){
   print(bind_cols(lambda = c(0, reg_result$lambda),
                   rbind(reg_result$ols$coefficients,
                         reg_result$coef))[c(T, shown), ])
+  cat("\nCoefficients using cross validation\n")
+  cat("lambda: ", reg_result$cv$lambda.1se, "\n")
+  res <- reg_result$cv.coef[-1]
+  names(res) <- colnames(reg_result$coef)
+  print(res)
 }
 
 summary.reg <- function(reg_result, nShow = Inf){
@@ -217,7 +234,11 @@ plot.reg <- function(reg_result, which = 1, x_axis = c("log-lambda", "prop")){
   hc_plot_returns_mem(reg_result$coef, reg_result$lambda, reg_result$t/reg_result$t_ols, reg_result$model)
 }
 
-predict.reg <- function(reg_result, newx, lambda, log = F, ...){
+predict.reg <- function(reg_result, newx, lambda = NULL, log = F, ...){
+  if (is.null(lambda)){
+    warning("No lambda specified, using cross validation.")
+    return (reg_result$cv.predict(newx))
+  }
   reg_result$fun.predict(newx, ifelse(log, exp(lambda), lambda), ...)
 }
 
@@ -232,12 +253,48 @@ plot.ellipse <- function(ellipse, n = 1, plot = T, ...){
   if (plot){
     print(
       ggplot(data) + 
-        geom_point(aes(x = x, y = y, col = factor(k)), ...) +
-        geom_point(data = data.frame(x = ellipse$xc, y = ellipse$yc), aes(x, y)) + 
-        guides(NULL)
+        geom_point(aes(x = x, y = y, col = factor(k)), show.legend = FALSE, ...) +
+        geom_point(data = data.frame(x = ellipse$xc, y = ellipse$yc), aes(x, y))
     )
   }
   return (data)
+}
+
+getCircle <- function(radius, npoints = 1000){
+  tt <- seq(0, 2*pi, length.out = npoints)
+  xx <- radius * cos(tt)
+  yy <- radius * sin(tt)
+  data <- data.frame(x = xx, y = yy)
+  return(data)
+}
+
+getSquare <- function(side, npoints = 1000){
+  z <- seq(-side, side, length = npoints)
+  w <- abs(side - abs(z))
+  z <- c(z, z)
+  w <- c(w, -w)
+  data <- data.frame(x = z, y = w)
+  return(data)
+}
+
+plot.regvarinfo <- function(info){
+  data.ellipse <- plot(info$ellipse, n = 3, plot = F)
+  tmp <- info$tangent_point
+  data.tp <- data.frame(x = tmp[1], y = tmp[2])
+  print(data.tp)
+  if (info$model == "Lasso")
+    data.restriction <- getSquare(info$t)
+  else
+    data.restriction <- getCircle(info$t)
+  gp <- ggplot() +
+    geom_polygon(data = data.restriction, aes(x, y), fill = "#C0C0C0", alpha = 0.5) +
+    geom_path(data = data.ellipse, aes(x, y, col = as.factor(k)), show.legend = F) +
+    geom_point(aes(x = info$ellipse$xc, y = info$ellipse$yc), size = 3) +
+    geom_text(aes(x = info$ellipse$xc * 0.85, y = info$ellipse$yc * 0.85, label = "beta_OLS")) +
+    geom_point(data = data.tp, aes(x,y), size = 3) +
+    labs(x = "input$x", y = "input$y") +
+    theme_bw(base_size = 15)
+  print(gp)
 }
 
 ### test
@@ -251,7 +308,9 @@ reg(swiss, model = "Lasso") -> tmp
 print(tmp)
 summary(tmp)
 plot(tmp)
-predict(tmp, newx = tmp$X, lambda = -5, log = T)
-f <- tmp$ellipse(i = 2, j = 3) #select the 2nd and 3rd variable
-f(lambda = 0.01) # plot when labmda = 0.01
-plot(f(0), n = 3, plot = T, size = 0.1)
+predict(tmp, newx = tmp$X, lambda = 5, log = T)
+predict(tmp, newx = tmp$X, lambda = 1, log = F)
+predict(tmp, newx = tmp$X) # no lambda specified and will choose lambda by cross validation.
+f <- tmp$info(i = 2, j = 3) #select the 2nd and 3rd variable
+f(lambda = 0) # plot when labmda = 0.01
+plot(f(0.5))
