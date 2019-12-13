@@ -87,6 +87,15 @@ reg <- function(df, formula = NULL, response = 1, predictors = -1, interactions 
             coef() %>% .[-1] %>% set_names(colnames(X_scaled))))
   )
   
+  func_predict <- function(new_x, lambda, ...){
+    tmp <- predict(glmnet(X_scaled, Y_scaled, lambda = lambda, alpha = ifelse(model == "Lasso", 1, 0)),
+                   newx = new_x, type = "response", ...)
+    return (transformpower(
+      tmp * attr(Y_scaled, "scaled:scale") + attr(Y_scaled, "scaled:center"),
+      power_response
+    ))
+  }
+  
   penalty_func_list <- list(
     "Lasso" = function(x) sum(abs(x)),
     "Ridge" = function(x) sqrt(sum(x^2))
@@ -117,6 +126,7 @@ reg <- function(df, formula = NULL, response = 1, predictors = -1, interactions 
     lambda = lambda0, t = t, t_ols = t_ols,
     X = X, Y = Y,
     X.scale = X_scaled, Y.scale = Y_scaled,
+    fun.predict = func_predict,
     fitted = fitted, fitted_ols = fitted_ols,
     RSS = RSS, RSS_ols = RSS_ols
   )
@@ -179,6 +189,10 @@ plot.reg <- function(reg_result, which = 1, x_axis = c("log-lambda", "prop")){
   }
   hc_plot_returns_mem <- memoise::memoise(hc_plot_returns)
   hc_plot_returns_mem(reg_result$coef, reg_result$lambda, reg_result$t/reg_result$t_ols, reg_result$model)
+}
+
+predict.reg <- function(reg_result, new_x, lambda, ...){
+  reg_result$fun.predict(new_x, lambda, ...)
 }
 
 ### test
