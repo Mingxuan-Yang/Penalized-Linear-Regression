@@ -34,6 +34,8 @@ Three sample data files are under `/Data` folder. One of them is `monthly_stock.
 
 - Web scraping and API interface, and manipulating scraped texts using `jsonlite`;
 
+- Platform accustomed Makefile with variables;
+
 - RShiny app;
 
 - HighChart object for interactive plots.
