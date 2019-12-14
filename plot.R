@@ -103,8 +103,8 @@ reg <- function(df, formula = NULL, response = 1, predictors = -1, interactions 
   }
   
   penalty_func_list <- list(
-    "Lasso" = function(x) sum(abs(x)),
-    "Ridge" = function(x) sqrt(sum(x^2))
+    "Lasso" = function(x) sum(abs(x), na.rm = T),
+    "Ridge" = function(x) sqrt(sum(x^2, na.rm = T))
   )
   penalty_func <- penalty_func_list[[model]]
   
@@ -284,7 +284,6 @@ plot.regvarinfo <- function(info){
   data.ellipse <- plot(info$ellipse, n = 3, plot = F)
   tmp <- info$tangent_point
   data.tp <- data.frame(x = tmp[1], y = tmp[2])
-  print(data.tp)
   if (info$model == "Lasso")
     data.restriction <- getSquare(info$t)
   else
@@ -305,7 +304,7 @@ plot.regvarinfo <- function(info){
 ### test
 swiss <- datasets::swiss 
 plot(reg(swiss, model = "Lasso"), x_axis = "log-lambda")
-plot(reg(swiss, interactions = 2, model = "Ridge"), x_axis = "p")
+plot(reg(iris, interactions = 2, model = "Ridge"), x_axis = "p")
 plot(reg(swiss, formula = Agriculture ~ Education + log(Catholic), model = "Lasso"), x_axis = "p")
 plot(reg(swiss, model = "Lasso", powerTransform = c(Education = 2, Catholic = 0)), x_axis =  "l")
 
