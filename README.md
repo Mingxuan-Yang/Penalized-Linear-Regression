@@ -1,6 +1,6 @@
 # STA 523 :: Project
 
-This is our group final project on **Penalized Linear Models**. 
+This is our group final project on **Penalized Linear Regression**. 
 
 Group members: Bo Liu, Mingxuan Yang, Jiawei Chen, Linlin Li.
 
@@ -17,6 +17,8 @@ Three sample data files are under `/Data` folder. One of them is `monthly_stock.
 - For regression part, when you use the automatic formula-generating system, please delete what you've written in the formula input. Otherwise, it will still use your formula input.
 
 - If there is an error "address already in use" when executing `make`, it is because the port selected is currently occupied. Since we choose one out of 5000 port numbers randomly each time, the problem will likely to disappear for the next port number.
+
+- If the webpage fails to pop out after `make`, you can open the browser and log in onto http://127.0.0.1:xxxx, where xxxx is the port number stored in port.txt. The webpage may fail to pop out because of security settings.
 
 ### Topics covered
 

@@ -9,7 +9,7 @@ library(glmnet)
 library(readr)
 
 ui <- navbarPage(theme = shinythemes::shinytheme('cosmo'),
-                 title = 'HHHHH',
+                 title = 'Penalized Linear Regression',
                  
                  ###EDA###
                  tabPanel(title = 'EDA',
