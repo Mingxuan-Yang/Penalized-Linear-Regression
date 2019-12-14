@@ -249,7 +249,7 @@ ui <- navbarPage(theme = shinythemes::shinytheme('cosmo'),
                                        column(
                                          width = 3,
                                          offset = 1,
-                                         sliderInput('nshow_su', 'No. of regression summaries displayed:',
+                                         numericInput('nshow_su', 'No. of regression summaries displayed:',
                                                      min = 1, max = 300, value = 5)
                                        )
                                      ),

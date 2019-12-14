@@ -10,4 +10,4 @@ Specifically, this app serves the following functions:
 
 3. A series of other fuctions, such as `glossary` to offer guidance to users.
 
-Note that the user need to upload a valid data frame object in CSV format in order to navigate into the main page of our shiny app. This data frame can be changed through `dataset management` part in `More`.
+Note that the user need to upload a valid data frame object in CSV format in order to navigate into the main page of our shiny app. This data frame can be changed through `dataset management` part in `More`. Users are recommended to put response as the first column of the uploaded data frame.
