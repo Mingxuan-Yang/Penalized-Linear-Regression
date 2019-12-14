@@ -131,9 +131,10 @@ reg <- function(df, formula = NULL, response = 1, predictors = -1, interactions 
         coef() %>% .[-1] %>% set_names(colnames(X_scaled))
       bs <- coefs[c(i,j)]
       bo <- coefs[-c(i,j)]
-      bc <- (solve(t(X_scaled) %*% (X_scaled)) %*% t(X_scaled) %*% (Y_scaled))[c(i,j)]
-      #bc <- solve(t(Xs) %*% (Xs)) %*% t(Xs) %*% (as.matrix(Y_scaled) - Xo %*% bo)
-      k <- sum((as.matrix(Y_scaled) - Xo %*% bo - Xs %*% bc)^2)
+      #bc <- (solve(t(X_scaled) %*% (X_scaled)) %*% t(X_scaled) %*% (Y_scaled))[c(i,j)]
+      bc <- solve(t(Xs) %*% (Xs)) %*% t(Xs) %*% (as.matrix(Y_scaled) - Xo %*% bo)
+      RSS <- sum((Y_scaled - Xo %*% bo - Xs %*% bs)^2)
+      k <- RSS - sum((as.matrix(Y_scaled) - Xo %*% bo - Xs %*% bc)^2)
       eigens <- eigen(t(Xs) %*% Xs, symmetric = T)
       ellipse.res <- list(
         xc = bc[1],
@@ -289,10 +290,12 @@ plot.regvarinfo <- function(info){
   gp <- ggplot() +
     geom_polygon(data = data.restriction, aes(x, y), fill = "#C0C0C0", alpha = 0.5) +
     geom_path(data = data.ellipse, aes(x, y, col = as.factor(k)), show.legend = F) +
-    geom_point(aes(x = info$ellipse$xc, y = info$ellipse$yc), size = 3) +
-    geom_text(aes(x = info$ellipse$xc * 0.85, y = info$ellipse$yc * 0.85, label = "beta_OLS")) +
-    geom_point(data = data.tp, aes(x,y), size = 3) +
+    geom_point(aes(x = info$ellipse$xc, y = info$ellipse$yc), size = 2) +
+    #geom_text(aes(x = info$ellipse$xc * 0.85, y = info$ellipse$yc * 0.85, label = "beta_OLS")) +
+    geom_point(data = data.tp, aes(x,y), size = 2) +
+    geom_point(aes(x = 0, y = 0), size = 2, col = "purple") +
     labs(x = "input$x", y = "input$y") +
+    coord_fixed() +
     theme_bw(base_size = 15)
   print(gp)
 }
