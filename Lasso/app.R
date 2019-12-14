@@ -172,7 +172,12 @@ ui <- navbarPage(theme = shinythemes::shinytheme('cosmo'),
                                            condition = "input.type == 'Formula'",
                                            textInput("formula", 
                                                      "Regression Formula:",
-                                                     placeholder = 'Y ~ a + b + c')
+                                                     placeholder = 'Y ~ a + b + c'),
+                                           bsTooltip(id = "formula", 
+                                                     title = "Do remember to delete the formula if you want to switch to components input <br> Or the result of components input will be overwritten by formula input",
+                                                     placement = "bottom", 
+                                                     trigger = "hover", 
+                                                     options = list(placement = 'bottom')
                                          ),
                                          conditionalPanel(condition = "input.type == 'Components'",
                                                           selectInput('response', 'Response:', 
@@ -211,7 +216,7 @@ ui <- navbarPage(theme = shinythemes::shinytheme('cosmo'),
                                        mainPanel(
                                          fluidRow(
                                            column(width = 8,
-                                                  offset = 1,
+                                                  offset = 2,
                                                   highchartOutput('coef_plot', height = '500px', width = '700px')
                                                   )
                                          ),
@@ -223,7 +228,7 @@ ui <- navbarPage(theme = shinythemes::shinytheme('cosmo'),
                                              sliderInput('lambda_elli', 'log-lambda to be used',
                                                          min = -10, max = 10, value = 0),
                                              div(align = 'right', actionButton('elli','Visualize model fitting')),
-                                             circle = TRUE, status = "secondary", icon = icon("gear"), width = "300px",
+                                             circle = TRUE, status = "secondary", icon = icon("gear"), width = "200px",
                                              tooltip = tooltipOptions(title = "Click to see inputs !")
                                            )
                                          ),
@@ -237,6 +242,7 @@ ui <- navbarPage(theme = shinythemes::shinytheme('cosmo'),
                                        )
                                      )
                             ),
+                            
                             ##Regression - Summary##
                             tabPanel(title = "Regression Summary",
                                      fluidRow(
@@ -441,7 +447,7 @@ server <- function(input, output, session) {
                       selected = reg_result()$predictors[3])
     updateSliderInput(session, 'lambda_elli',
                       min = min(log(reg_result()$lambda)),
-                      max = max(log(reg_result()$lambda)))
+                      max = max(log(reg_result()$lambda)),step = 0.2)
   })
     
   observeEvent(input$elli,{

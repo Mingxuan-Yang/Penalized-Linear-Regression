@@ -125,7 +125,6 @@ reg <- function(df, formula = NULL, response = 1, predictors = -1, interactions 
   
   info <- function(i, j){
     Xs <- as.matrix(X_scaled)[, c(i,j)]
-    print(Xs)
     Xo <- as.matrix(X_scaled)[, -c(i,j)]
     function(lambda){
       coefs <- glmnet(X_scaled, Y_scaled, lambda = lambda, alpha = ifelse(model == "Lasso", 1, 0)) %>%
