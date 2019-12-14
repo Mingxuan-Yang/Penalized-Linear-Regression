@@ -84,7 +84,7 @@ ui <- navbarPage(theme = shinythemes::shinytheme('cosmo'),
                                                       choices = 1,
                                                       multiple = FALSE
                                                   )
-                                              ),
+                                              )
                                           ),
                                           br(),
                                           plotOutput('bi_plot_out', height = '250px')
@@ -229,7 +229,7 @@ ui <- navbarPage(theme = shinythemes::shinytheme('cosmo'),
                  
                  #################################################### need to add glossary
                  navbarMenu('More',
-                            tabPanel('Glossary',
+                            tabPanel('Glossary'
                             ),
                             tabPanel('About',
                                      fluidRow(
