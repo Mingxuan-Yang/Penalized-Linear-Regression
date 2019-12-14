@@ -224,7 +224,9 @@ ui <- navbarPage(theme = shinythemes::shinytheme('cosmo'),
                                            ),
                                            column(width = 3,
                                                   sliderInput('lambda_elli', 'log-lambda to be used',
-                                                              min = -10, 10, value = 0))
+                                                              min = -10, max = 10, value = 0)),
+                                           column(width = 3,
+                                                  actionButton('elli','Visualize model fitting'))
                                          ),
                                          plotOutput('elli_plot', height = '300px', width = '500px')
                                        )
@@ -406,30 +408,44 @@ server <- function(input, output, session) {
   
   source('coef_plot.R', local = TRUE)
   
-  observeEvent(input$reg,{
-    if (input$formula == '') {
-      form <- NULL
-    } else form <- as.formula(input$formula)
+  form <- function(x) {
+    if (x == '') {
+      res <- NULL
+    } else res <- as.formula(x)
+  }
+  
     
-    reg_result <-reg(df = vals$dataset, model = input$model, formula = form,
-                     response = which(colnames(vals$dataset)== input$response), 
-                     predictors = which(colnames(vals$dataset)%in% input$predictor), 
-                     interactions = input$interaction,
-                     lambda0 = exp(seq(input$loglambda[1], input$loglambda[2], length.out = 300)))
+  reg_result <-eventReactive(input$reg,{
+    reg(df = vals$dataset, model = input$model, formula = form(input$formula),
+        response = which(colnames(vals$dataset)== input$response), 
+        predictors = which(colnames(vals$dataset)%in% input$predictor), 
+        interactions = input$interaction,
+        lambda0 = exp(seq(input$loglambda[1], 
+                          input$loglambda[2], 
+                          length.out = 300)))
+  })
+  observeEvent(input$reg,{
     output$coef_plot <- renderHighchart({
-      plot(reg_result, x_axis = input$x_axis, plot = F)
+      plot(reg_result(), x_axis = input$x_axis, plot = F)
     })
     output$df_su <- DT::renderDataTable({
-      DT::datatable(summary(reg_result, nShow = input$nshow_su),
+      DT::datatable(summary(reg_result(), nShow = input$nshow_su),
                     options = list(searchHighlight = TRUE))
     })
     
-#    f <- reg_result$info(i = input$x_elli, j = input$y_elli)
+  })
+    
+    
+  observeEvent(input$elli,{
+    
+  })
+    
+ #   f = reg_result()$info(i = input$x_elli, j = input$y_elli)
 #    output$elli_plot <- renderPlot({
 #      plot(f(exp(input$lambda_elli)))
 #    })
     
-  })
+
   
   
   ############################ when x_axis is set to prop, error occurs
