@@ -6,8 +6,7 @@ library(tidyverse)
 library(ggplot2)
 library(highcharter)
 library(glmnet)
-
-
+library(readr)
 
 ui <- navbarPage(theme = shinythemes::shinytheme('cosmo'),
                  title = 'HHHHH',
@@ -263,13 +262,13 @@ ui <- navbarPage(theme = shinythemes::shinytheme('cosmo'),
                             tabPanel('Glossary',
                                      fluidRow(
                                        column(width = 9, 
-                                              includeMarkdown('glossary.md'))
+                                              includeMarkdown('AppFiles/glossary.md'))
                                      )
                             ),
                             tabPanel('About',
                                      fluidRow(
                                        column(9,
-                                              includeMarkdown('about.md'))
+                                              includeMarkdown('AppFiles/about.md'))
                                      )
                             ),
                             tabPanel("dataset management",
@@ -412,7 +411,7 @@ server <- function(input, output, session) {
                                          input$trivariate_z))
   })
   
-  source('coef_plot.R', local = TRUE)
+  source('reg.R', local = TRUE)
   
   form <- function(x) {
     if (x == '') {
@@ -438,21 +437,21 @@ server <- function(input, output, session) {
                     options = list(searchHighlight = TRUE))
     })
     updateSelectInput(session, 'x_elli', 
-                      choices = reg_result()$predictors,
-                      selected = reg_result()$predictors[2])
+                      choices = colnames(reg_result()$X.scale),
+                      selected = colnames(reg_result()$X.scale)[1])
     updateSelectInput(session, 'y_elli', 
-                      choices = reg_result()$predictors,
-                      selected = reg_result()$predictors[3])
+                      choices = colnames(reg_result()$X.scale),
+                      selected = colnames(reg_result()$X.scale)[2])
     updateSliderInput(session, 'lambda_elli',
                       min = min(log(reg_result()$lambda)),
                       max = max(log(reg_result()$lambda)),step = 0.2)
   })
     
   observeEvent(input$elli,{
-    f = reg_result()$info(i = which(reg_result()$predictors == input$x_elli),
-                          j = which(reg_result()$predictors == input$y_elli))
+    f = reg_result()$info(i = which(colnames(reg_result()$X.scale) == input$x_elli),
+                          j = which(colnames(reg_result()$X.scale) == input$y_elli))
     output$elli_plot = renderPlot({
-      plot(f(exp(input$lambda_elli)))
+      plot(f(exp(input$lambda_elli)), xlabel = input$x_elli, ylabel = input$y_elli)
     })
   })
  
@@ -460,4 +459,6 @@ server <- function(input, output, session) {
 
 
 # Run the application 
-shinyApp(ui = ui, server = server)
+portnum <- read_file("port.txt") %>% as.numeric()
+print(portnum)
+shinyApp(ui = ui, server = server, options = list(port = portnum))

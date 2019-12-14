@@ -83,9 +83,9 @@ reg <- function(df, formula = NULL, response = 1, predictors = -1, interactions 
   
   ## Suppose model %in% c("Lasso", "Ridge")
   coef <- do.call(rbind,
-                  map(lambda0, 
-                      ~ c(glmnet(X_scaled, Y_scaled, lambda = .x, alpha = ifelse(model == "Lasso", 1, 0)) %>%
-                            coef() %>% .[-1] %>% set_names(colnames(X_scaled))))
+    map(lambda0, 
+        ~ c(glmnet(X_scaled, Y_scaled, lambda = .x, alpha = ifelse(model == "Lasso", 1, 0)) %>%
+            coef() %>% .[-1] %>% set_names(colnames(X_scaled))))
   )
   
   func_predict <- function(newx, lambda, ...){
@@ -140,7 +140,7 @@ reg <- function(df, formula = NULL, response = 1, predictors = -1, interactions 
         yc = bc[2],
         a = sqrt(k/eigens$values[2]),
         b = sqrt(k/eigens$values[1]),
-        phi = acos(eigens$vectors[1,2] / sqrt(sum(eigens$vectors[,2]^2)))
+        phi = acos(eigens$vectors[1,2] * sign(eigens$vectors[2,2]) / sqrt(sum(eigens$vectors[,2]^2)))
       )
       class(ellipse.res) <- "ellipse"
       t <- penalty_func(bs)
@@ -280,11 +280,10 @@ getSquare <- function(side, npoints = 1000){
   return(data)
 }
 
-plot.regvarinfo <- function(info){
+plot.regvarinfo <- function(info, xlabel = "input$x", ylabel = "input$y"){
   data.ellipse <- plot(info$ellipse, n = 3, plot = F)
   tmp <- info$tangent_point
   data.tp <- data.frame(x = tmp[1], y = tmp[2])
-  print(data.tp)
   if (info$model == "Lasso")
     data.restriction <- getSquare(info$t)
   else
@@ -296,27 +295,8 @@ plot.regvarinfo <- function(info){
     #geom_text(aes(x = info$ellipse$xc * 0.85, y = info$ellipse$yc * 0.85, label = "beta_OLS")) +
     geom_point(data = data.tp, aes(x,y), size = 2) +
     geom_point(aes(x = 0, y = 0), size = 2, col = "purple") +
-    labs(x = "input$x", y = "input$y") +
+    labs(x = xlabel, y = ylabel) +
     coord_fixed() +
     theme_bw(base_size = 15)
   print(gp)
 }
-
-### test
-#swiss <- datasets::swiss 
-#plot(reg(swiss, model = "Lasso"), x_axis = "log-lambda")
-#plot(reg(swiss, interactions = 2, model = "Ridge"), x_axis = "p")
-#plot(reg(swiss, formula = Agriculture ~ Education + log(Catholic), model = "Lasso"), x_axis = "p")
-#plot(reg(swiss, model = "Lasso", powerTransform = c(Education = 2, Catholic = 0)), x_axis =  "l")
-
-#reg(swiss, model = "Lasso") -> tmp
-#print(tmp)
-#summary(tmp)
-#plot(tmp)
-#predict(tmp, newx = tmp$X, lambda = 5, log = T)
-#predict(tmp, newx = tmp$X, lambda = 1, log = F)
-#predict(tmp, newx = tmp$X) # no lambda specified and will choose lambda by cross validation.
-#f <- tmp$info(i = 2, j = 3) #select the 2nd and 3rd variable
-#f(lambda = 0) # plot when labmda = 0.01
-#plot(f(0.5))
-

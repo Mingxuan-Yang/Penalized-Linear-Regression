@@ -1,4 +1,6 @@
 library(jsonlite)
+library(readr)
+library(datasets)
 
 url <- "https://www.alphavantage.co/query?function=TIME_SERIES_MONTHLY&symbol=MSFT&apikey=3E3W64XJ589OAWJ7"
 stock_list <- read_json(url)[[2]]
@@ -12,4 +14,6 @@ stock_data[,1:5] <- apply(stock_data[,1:5], 2, function(x){
 })
 
 # save result
-write_csv(stock_data,'monthly_stock.csv')
+write_csv(stock_data,'Data/monthly_stock.csv')
+write_csv(iris, 'Data/iris.csv')
+write_csv(swiss, 'Data/swiss.csv')
