@@ -212,7 +212,7 @@ ui <- navbarPage(theme = shinythemes::shinytheme('cosmo'),
                                          div(align = 'right',actionButton('reg','Regression'))
                                        ),
                                        mainPanel(
-                                         plotOutput('coef_plot', height = '300px')
+                                         highchartOutput('coef_plot', height = '300px')
                                        )
                                      )
                             ),
@@ -408,8 +408,8 @@ server <- function(input, output, session) {
     })
     
     observeEvent(input$reg, {
-      output$coef_plot <- renderPlot({
-        plot(reg_result(), x_axis =  input$x_axis)
+      output$coef_plot <- renderHighchart({
+        plot(reg_result(), x_axis =  input$x_axis, plot = F)
       })
       output$df_re <- DT::renderDataTable({
         DT::datatable(print(reg_result(), nshow = input$nshow_re),
