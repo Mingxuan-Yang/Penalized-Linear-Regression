@@ -460,5 +460,4 @@ server <- function(input, output, session) {
 
 # Run the application 
 portnum <- read_file("port.txt") %>% as.numeric()
-print(portnum)
 shinyApp(ui = ui, server = server, options = list(port = portnum))
