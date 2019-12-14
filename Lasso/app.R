@@ -249,12 +249,16 @@ ui <- navbarPage(theme = shinythemes::shinytheme('cosmo'),
                  
                  #################################################### need to add glossary
                  navbarMenu('More',
-                            tabPanel('Glossary'
+                            tabPanel('Glossary',
+                                     fluidRow(
+                                       column(width = 9, 
+                                              includeMarkdown('glossary.md'))
+                                     )
                             ),
                             tabPanel('About',
                                      fluidRow(
                                        column(9,
-                                              htmlOutput('intro'))
+                                              includeMarkdown('about.md'))
                                      )
                             ),
                             tabPanel("dataset management",
@@ -324,7 +328,6 @@ server <- function(input, output, session) {
                         selected = colnames(vals$dataset)[-1])
       updateNumericInput(session, 'interaction',
                          min = 1, max = ncol(vals$dataset))
-      
       removeModal()
     }
   })
@@ -407,8 +410,6 @@ server <- function(input, output, session) {
       res <- NULL
     } else res <- as.formula(x)
   }
-  
-    
   reg_result <-eventReactive(input$reg,{
     reg(df = vals$dataset, model = input$model, formula = form(input$formula),
         response = which(colnames(vals$dataset)== input$response), 
@@ -418,6 +419,7 @@ server <- function(input, output, session) {
                           input$loglambda[2], 
                           length.out = 300)))
   })
+  
   observeEvent(input$reg,{
     output$coef_plot <- renderHighchart({
       plot(reg_result(), x_axis = input$x_axis, plot = F)
@@ -437,18 +439,13 @@ server <- function(input, output, session) {
                       max = max(log(reg_result()$lambda)))
   })
     
-    
   observeEvent(input$elli,{
     f = reg_result()$info(i = input$x_elli, j = input$y_elli)
     output$elli_plot = renderPlot({
       plot(f(exp(input$lambda_elli)))
     })
   })
-    
  
-  output$intro <- renderUI({HTML("Welcome to XXX. This application serves the following functions:<br/>1. XXX<br/>2. XXX<br/>3. XXX")})
-  
-  
 }
 
 
