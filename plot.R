@@ -67,7 +67,7 @@ reg <- function(df, formula = NULL, response = 1, predictors = -1, interactions 
     predictors <- which(colnames(df) == predictors)
   df <- df %>% mutatePower(powerTransform)
   # generate formula by interactions
-  if (is.null(formula)){
+  if (is.null(formula) | formula == ""){
     formula <- get_formula(colnames(df)[response],
                            colnames(df)[predictors],
                            interactions)
@@ -131,7 +131,6 @@ reg <- function(df, formula = NULL, response = 1, predictors = -1, interactions 
         coef() %>% .[-1] %>% set_names(colnames(X_scaled))
       bs <- coefs[c(i,j)]
       bo <- coefs[-c(i,j)]
-      #bc <- (solve(t(X_scaled) %*% (X_scaled)) %*% t(X_scaled) %*% (Y_scaled))[c(i,j)]
       bc <- solve(t(Xs) %*% (Xs)) %*% t(Xs) %*% (as.matrix(Y_scaled) - Xo %*% bo)
       RSS <- sum((Y_scaled - Xo %*% bo - Xs %*% bs)^2)
       k <- RSS - sum((as.matrix(Y_scaled) - Xo %*% bo - Xs %*% bc)^2)
@@ -202,7 +201,7 @@ summary.reg <- function(reg_result, nShow = Inf){
             RSS = c(reg_result$RSS_ols, reg_result$RSS))[c(T, shown), ]
 }
 
-plot.reg <- function(reg_result, which = 1, x_axis = c("log-lambda", "prop")){
+plot.reg <- function(reg_result, which = 1, x_axis = c("log-lambda", "prop"), plot = T){
   x_axis <- match.arg(x_axis)
   
   ###### function to create an interface
@@ -231,8 +230,11 @@ plot.reg <- function(reg_result, which = 1, x_axis = c("log-lambda", "prop")){
     }
     return(hc_plot)
   }
-  hc_plot_returns_mem <- memoise::memoise(hc_plot_returns)
-  hc_plot_returns_mem(reg_result$coef, reg_result$lambda, reg_result$t/reg_result$t_ols, reg_result$model)
+  if (plot){
+    hc_plot_returns_mem <- memoise::memoise(hc_plot_returns)
+    hc_plot_returns_mem(reg_result$coef, reg_result$lambda, reg_result$t/reg_result$t_ols, reg_result$model)
+  }
+  return (hc_plot_returns(reg_result$coef, reg_result$lambda, reg_result$t/reg_result$t_ols, reg_result$model))
 }
 
 predict.reg <- function(reg_result, newx, lambda = NULL, log = F, ...){
