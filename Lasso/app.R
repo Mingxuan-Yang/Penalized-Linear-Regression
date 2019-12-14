@@ -223,11 +223,17 @@ ui <- navbarPage(theme = shinythemes::shinytheme('cosmo'),
                                              sliderInput('lambda_elli', 'log-lambda to be used',
                                                          min = -10, max = 10, value = 0),
                                              div(align = 'right', actionButton('elli','Visualize model fitting')),
-                                             circle = TRUE, status = "danger", icon = icon("gear"), width = "300px",
+                                             circle = TRUE, status = "secondary", icon = icon("gear"), width = "300px",
                                              tooltip = tooltipOptions(title = "Click to see inputs !")
                                            )
                                          ),
-                                         plotOutput('elli_plot', height = '300px', width = '500px')
+                                         fluidRow(
+                                           column(8,
+                                                  offset = 2,
+                                                  plotOutput('elli_plot', height = '500px', width = '700px')
+                                                  )
+                                         )
+                                         
                                        )
                                      )
                             ),
@@ -246,8 +252,7 @@ ui <- navbarPage(theme = shinythemes::shinytheme('cosmo'),
                             )
                           )
                  ),
-                 
-                 #################################################### need to add glossary
+                
                  navbarMenu('More',
                             tabPanel('Glossary',
                                      fluidRow(
@@ -440,7 +445,8 @@ server <- function(input, output, session) {
   })
     
   observeEvent(input$elli,{
-    f = reg_result()$info(i = input$x_elli, j = input$y_elli)
+    f = reg_result()$info(i = which(reg_result()$predictors == input$x_elli),
+                          j = which(reg_result()$predictors == input$y_elli))
     output$elli_plot = renderPlot({
       plot(f(exp(input$lambda_elli)))
     })
