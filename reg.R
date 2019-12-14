@@ -124,8 +124,8 @@ reg <- function(df, formula = NULL, response = 1, predictors = -1, interactions 
   RSS_ols <- sum((org_Y - fitted_ols) ^ 2)
   
   info <- function(i, j){
-    Xs <- as.matrix(X_scaled)[, c(i,j)]
-    Xo <- as.matrix(X_scaled)[, -c(i,j)]
+    Xs <- as.matrix(X_scaled)[, c(i,j), drop = F]
+    Xo <- as.matrix(X_scaled)[, -c(i,j), drop = F]
     function(lambda){
       coefs <- glmnet(X_scaled, Y_scaled, lambda = lambda, alpha = ifelse(model == "Lasso", 1, 0)) %>%
         coef() %>% .[-1] %>% set_names(colnames(X_scaled))
