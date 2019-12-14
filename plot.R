@@ -67,7 +67,7 @@ reg <- function(df, formula = NULL, response = 1, predictors = -1, interactions 
     predictors <- which(colnames(df) == predictors)
   df <- df %>% mutatePower(powerTransform)
   # generate formula by interactions
-  if (is.null(formula) | formula == ""){
+  if (is.null(formula) || formula == ""){
     formula <- get_formula(colnames(df)[response],
                            colnames(df)[predictors],
                            interactions)
