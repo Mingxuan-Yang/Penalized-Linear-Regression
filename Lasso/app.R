@@ -216,17 +216,16 @@ ui <- navbarPage(theme = shinythemes::shinytheme('cosmo'),
                                                   )
                                          ),
                                          fluidRow(
-                                           column(width = 3,
-                                                  selectInput('x_elli', 'x_axis', choices = 1)
-                                           ),
-                                           column(width = 3,
-                                                  selectInput('y_elli', 'y_axis', choices = 1)
-                                           ),
-                                           column(width = 3,
-                                                  sliderInput('lambda_elli', 'log-lambda to be used',
-                                                              min = -10, max = 10, value = 0)),
-                                           column(width = 3,
-                                                  actionButton('elli','Visualize model fitting'))
+                                           dropdownButton(
+                                             tags$h3("List of Input"),
+                                             selectInput('x_elli', 'x_axis', choices = 1),
+                                             selectInput('y_elli', 'y_axis', choices = 1),
+                                             sliderInput('lambda_elli', 'log-lambda to be used',
+                                                         min = -10, max = 10, value = 0),
+                                             div(align = 'right', actionButton('elli','Visualize model fitting')),
+                                             circle = TRUE, status = "danger", icon = icon("gear"), width = "300px",
+                                             tooltip = tooltipOptions(title = "Click to see inputs !")
+                                           )
                                          ),
                                          plotOutput('elli_plot', height = '300px', width = '500px')
                                        )
@@ -325,12 +324,7 @@ server <- function(input, output, session) {
                         selected = colnames(vals$dataset)[-1])
       updateNumericInput(session, 'interaction',
                          min = 1, max = ncol(vals$dataset))
-      updateSelectInput(session, 'x_elli', 
-                        choices = colnames(vals$dataset),
-                        selected = colnames(vals$dataset)[2])
-      updateSelectInput(session, 'y_elli', 
-                        choices = colnames(vals$dataset),
-                        selected = colnames(vals$dataset)[3])
+      
       removeModal()
     }
   })
@@ -429,32 +423,29 @@ server <- function(input, output, session) {
       plot(reg_result(), x_axis = input$x_axis, plot = F)
     })
     output$df_su <- DT::renderDataTable({
-      DT::datatable(summary(reg_result(), nShow = input$nshow_su),
+      DT::datatable(round(summary(reg_result(), nShow = input$nshow_su),3),
                     options = list(searchHighlight = TRUE))
     })
-    
+    updateSelectInput(session, 'x_elli', 
+                      choices = reg_result()$predictors,
+                      selected = reg_result()$predictors[2])
+    updateSelectInput(session, 'y_elli', 
+                      choices = reg_result()$predictors,
+                      selected = reg_result()$predictors[3])
+    updateSliderInput(session, 'lambda_elli',
+                      min = min(log(reg_result()$lambda)),
+                      max = max(log(reg_result()$lambda)))
   })
     
     
-#  observeEvent(input$elli,{
+  observeEvent(input$elli,{
+    f = reg_result()$info(i = input$x_elli, j = input$y_elli)
+    output$elli_plot = renderPlot({
+      plot(f(exp(input$lambda_elli)))
+    })
+  })
     
-#  })
-    
- #   f = reg_result()$info(i = input$x_elli, j = input$y_elli)
-#    output$elli_plot <- renderPlot({
-#      plot(f(exp(input$lambda_elli)))
-#    })
-    
-
-  
-  
-  ############################ when x_axis is set to prop, error occurs
-  
-  
-  
-  
-  
-  
+ 
   output$intro <- renderUI({HTML("Welcome to XXX. This application serves the following functions:<br/>1. XXX<br/>2. XXX<br/>3. XXX")})
   
   
