@@ -177,7 +177,7 @@ ui <- navbarPage(theme = shinythemes::shinytheme('cosmo'),
                                                      title = "Do remember to delete the formula if you want to switch to components input <br> Or the result of components input will be overwritten by formula input",
                                                      placement = "bottom", 
                                                      trigger = "hover", 
-                                                     options = list(placement = 'bottom')
+                                                     options = list(placement = 'bottom'))
                                          ),
                                          conditionalPanel(condition = "input.type == 'Components'",
                                                           selectInput('response', 'Response:', 
@@ -278,8 +278,6 @@ ui <- navbarPage(theme = shinythemes::shinytheme('cosmo'),
                             )
                  ) # end navbar menu
 )
-
-
 
 server <- function(input, output, session) {
   
