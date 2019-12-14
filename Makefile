@@ -12,11 +12,21 @@ monthly_stock.csv iris.csv swiss.csv: Data/getData.R
 
 cat := $(if $(filter $(OS),Windows_NT),type,cat)
 variable = $(shell $(cat) port.txt)
+ifeq ($(OS),Windows_NT)
+    OPEN := start
+else
+    UNAME := $(shell uname -s)
+    ifeq ($(UNAME),Linux)
+        OPEN := xdg-open
+    else
+    		OPEN := open
+    endif
+endif
 
 launch: app.R AppFiles/about.md AppFiles/glossary.md port.txt
 	
 	Rscript app.R &
-	open http\://127.0.0.1\:$(variable);
+	$(OPEN) http\://127.0.0.1\:$(variable);
 	
 clean_data:
 	rm -rf Data/*.csv
