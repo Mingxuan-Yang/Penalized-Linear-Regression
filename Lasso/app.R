@@ -436,9 +436,9 @@ server <- function(input, output, session) {
   })
     
     
-  observeEvent(input$elli,{
+#  observeEvent(input$elli,{
     
-  })
+#  })
     
  #   f = reg_result()$info(i = input$x_elli, j = input$y_elli)
 #    output$elli_plot <- renderPlot({
