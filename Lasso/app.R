@@ -209,7 +209,24 @@ ui <- navbarPage(theme = shinythemes::shinytheme('cosmo'),
                                          div(align = 'right',actionButton('reg','Regression'))
                                        ),
                                        mainPanel(
-                                         highchartOutput('coef_plot', height = '300px')
+                                         fluidRow(
+                                           column(width = 8,
+                                                  offset = 1,
+                                                  highchartOutput('coef_plot', height = '500px', width = '700px')
+                                                  )
+                                         ),
+                                         fluidRow(
+                                           column(width = 3,
+                                                  selectInput('x_elli', 'x_axis', choices = 1)
+                                           ),
+                                           column(width = 3,
+                                                  selectInput('y_elli', 'y_axis', choices = 1)
+                                           ),
+                                           column(width = 3,
+                                                  sliderInput('lambda_elli', 'log-lambda to be used',
+                                                              min = -10, 10, value = 0))
+                                         ),
+                                         plotOutput('elli_plot', height = '300px', width = '500px')
                                        )
                                      )
                             ),
@@ -306,6 +323,12 @@ server <- function(input, output, session) {
                         selected = colnames(vals$dataset)[-1])
       updateNumericInput(session, 'interaction',
                          min = 1, max = ncol(vals$dataset))
+      updateSelectInput(session, 'x_elli', 
+                        choices = colnames(vals$dataset),
+                        selected = colnames(vals$dataset)[2])
+      updateSelectInput(session, 'y_elli', 
+                        choices = colnames(vals$dataset),
+                        selected = colnames(vals$dataset)[3])
       removeModal()
     }
   })
@@ -333,7 +356,6 @@ server <- function(input, output, session) {
     },
     rownames = FALSE,
     options = list(
-      paging = FALSE, 
       searching = FALSE, 
       info = FALSE, 
       ordering = FALSE,
@@ -343,8 +365,9 @@ server <- function(input, output, session) {
   })
   
   output$hist_plot_out <- renderPlot({
+    stat_type = ifelse(is.numeric(vals$dataset[,input$summary_in]), 'bin', 'count')
     ggplot(data = vals$dataset) + 
-      geom_histogram(aes(vals$dataset[,input$summary_in]), stat = 'count', 
+      geom_histogram(aes(vals$dataset[,input$summary_in]), stat = stat_type, 
                      fill = "#C0C0C0", color = "black") + 
       labs(x = input$summary_in) +
       theme_bw(base_size = 15) + 
@@ -382,26 +405,37 @@ server <- function(input, output, session) {
   })
   
   source('coef_plot.R', local = TRUE)
-  reg_result <- eventReactive(input$reg,{
-    reg(df = vals$dataset, model = input$model, formula = input$formula,
-        response = input$response, 
-        predictors = which(colnames(vals$dataset)%in% input$predictor), 
-        interactions = input$interaction,
-        lambda0 = exp(seq(input$loglambda[1], input$loglambda[2], length.out = 300)))
-  })
   
-  observeEvent(input$reg, {
-    output$coef_plot <- renderHighchart({
-      plot(reg_result(), x_axis =  input$x_axis, plot = F)
-    })
+  observeEvent(input$reg,{
+    if (input$formula == '') {
+      form <- NULL
+    } else form <- as.formula(input$formula)
     
+    reg_result <-reg(df = vals$dataset, model = input$model, formula = form,
+                     response = which(colnames(vals$dataset)== input$response), 
+                     predictors = which(colnames(vals$dataset)%in% input$predictor), 
+                     interactions = input$interaction,
+                     lambda0 = exp(seq(input$loglambda[1], input$loglambda[2], length.out = 300)))
+    output$coef_plot <- renderHighchart({
+      plot(reg_result, x_axis = input$x_axis, plot = F)
+    })
     output$df_su <- DT::renderDataTable({
-      DT::datatable(summary(reg_result(), nShow = input$nshow_su),
+      DT::datatable(summary(reg_result, nShow = input$nshow_su),
                     options = list(searchHighlight = TRUE))
     })
+    
+#    f <- reg_result$info(i = input$x_elli, j = input$y_elli)
+#    output$elli_plot <- renderPlot({
+#      plot(f(exp(input$lambda_elli)))
+#    })
+    
   })
   
-  #   f <- reg_result()$info(i = input$x_elli, j = input$y_elli)
+  
+  ############################ when x_axis is set to prop, error occurs
+  
+  
+  
   
   
   
