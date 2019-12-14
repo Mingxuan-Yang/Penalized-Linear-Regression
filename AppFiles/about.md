@@ -1,4 +1,4 @@
-## Welcome to XXX!
+## Welcome to PLR!
 
 This application can be used to fit penalized linear regression models, such as Lasso and Ridge, to a dataset uploaded by the user, and more importantly to visualize the process of model fitting.
 
