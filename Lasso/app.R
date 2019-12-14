@@ -1,5 +1,7 @@
 library(shiny)
 library(shinyjs)
+library(shinyBS)
+library(shinyWidgets)
 library(tidyverse)
 library(ggplot2)
 library(highcharter)
@@ -13,6 +15,7 @@ ui <- navbarPage(theme = shinythemes::shinytheme('cosmo'),
                  ###EDA###
                  tabPanel(title = 'EDA',
                           icon = icon('stats', lib = 'glyphicon'),
+                          
                           tabsetPanel(
                               id = 'tabset_eda',
                               
@@ -131,38 +134,100 @@ ui <- navbarPage(theme = shinythemes::shinytheme('cosmo'),
                           
                  ),
                  
-                 ###Visualization###
-                 tabPanel(title = 'Visualization',
+                 ###Regression###
+                 tabPanel(title = 'Regression',
                           icon = icon('eye-open', lib = 'glyphicon'),
-                          sidebarLayout(
-                            sidebarPanel(
-                              selectInput('type', label = 'Input type:',
-                                          choices = c('Formula', 'Components'),
-                                          selected = 'Formula'),
-                              conditionalPanel(
-                                condition = "input.type == Formula",
-                                textInput("formula", "Regression Formula:",
-                                            placeholder = 'Y ~ a + b + c')
-                              ),
-                              conditionalPanel(
-                                condition = 'input.type == Components',
-                                textInput('response', 'Response: (variable name or column index)',
-                                          placeholder = 'e.g.: 1 or Petal.length'),
-                                textInput('predictors', 'Predictors:(variable name or column index)',
-                                          placeholder = 'e.g.: -1 or 5:6'),
-                                textInput('interactions', 'Interactions:(the level of multiway interactions)',
-                                          placeholder = 'e.g.: 1 or 2 or 3')
-                              ),
-                              selectInput('model', 'Model type:',
-                                          choices = c('Ridge', 'Lasso'),
-                                          selected = 'Ridge'),
-                              sliderInput('lambda', 'Shrinkage Parameter Range (lambda):',
-                                          min = 0, max = exp(15), value = c(exp(-10),exp(10)))
-                            )
-                          )
                           
+                          ##Regression - Plot##
+                          tabsetPanel(
+                            id = 'tabset_eda',
+                            tabPanel(title = 'Regression Plot',
+                                     
+                                     sidebarLayout(
+                                       sidebarPanel(
+                                         selectInput('type',
+                                                     'Input type:',
+                                                     choices = c('Formula', 'Components'),
+                                                     selected = 'Formula'),
+                                         conditionalPanel(
+                                           condition = "input.type == 'Formula'",
+                                           textInput("formula", 
+                                                     "Regression Formula:",
+                                                     placeholder = 'Y ~ a + b + c')
+                                         ),
+                                         conditionalPanel(condition = "input.type == 'Components'",
+                                                          textInput('response', 'Response: (variable name or column index)',
+                                                                    placeholder = 'e.g.: 1 or Petal.length'),
+                                                          pickerInput('predictor', 'Predictors:', 
+                                                                      choices = 1, options = list(`actions-box` = TRUE),
+                                                                      multiple = T),
+                                                          numericInput('interaction', 'Interactions:(the level of multiway interactions)',
+                                                                    min = 1, max = 10, step = 1, value = 1)
+                                         ),
+                                         selectInput('model', 'Model type:',
+                                                     choices = c('Ridge', 'Lasso'),
+                                                     selected = 'Ridge'
+                                                     ),
+                                         sliderInput('lambda', 'Shrinkage Parameter Range (lambda):',
+                                                     min = 0, max = 10000, value = c(100,1000)
+                                                     ),
+                                         #selectInput('power', 'Power Transform Level:', 
+                                          #           choices = c('Original', 'Exponentiate', 'log', 'Input')
+                                          #           ),
+                                         conditionalPanel(
+                                           condition = "input.power == 'Input'",
+                                           textInput('power_input', 'Input Power Level:',
+                                                     placeholder = 'e.g.: 1 or 2 or 3'
+                                                     )
+                                         ),
+                                         selectInput('x_axis', 'X axis type',
+                                                     choices =  c("log-lambda", "prop"),
+                                                     selected = 'log-lambda'
+                                                     ),
+                                         bsTooltip(id = "x_axis", 
+                                                   title = "'log-lambda': the logarithmic form of shirnkage parameter <br>'prop' = |coefficients|/sum(|coefficients|) for Lasso<br>'prop' = coefficient^2/coefficient_OLS^2 for Ridge",
+                                                   placement = "bottom", 
+                                                   trigger = "hover", 
+                                                   options = list(placement = 'bottom')
+                                                   ),
+                                         div(align = 'right',actionButton('reg','Regression'))
+                                       ),
+                                       mainPanel(
+                                         plotOutput('coef_plot', height = '300px')
+                                       )
+                                     )
+                            ),
+                            ##Regression - Print Result##
+                            tabPanel(title = "Regression Result",
+                                     fluidRow(
+                                       column(
+                                         width = 3,
+                                         offset = 1, 
+                                         sliderInput('nshow_re', 'No. of regression results displayed:',
+                                                     min = 1, max = 300, value = 5)
+                                       )
+                                     ),
+                                     br(),
+                                     DT::dataTableOutput("df_re")
+                                     ),
+                            
+                            ##Regression - Summary##
+                            tabPanel(title = "Regression Summary",
+                                     fluidRow(
+                                       column(
+                                         width = 3,
+                                         offset = 1,
+                                         sliderInput('nshow_su', 'No. of regression summaries displayed:',
+                                                     min = 1, max = 300, value = 5)
+                                       )
+                                     ),
+                                     br(),
+                                     DT::dataTableOutput("df_su")
+                                     )
+                          )
                  ),
                  
+                 #################################################### need to add glossary
                  navbarMenu('More',
                             tabPanel('Glossary',
                             ),
@@ -187,7 +252,7 @@ server <- function(input, output, session) {
     
     dataModal <- function(failed = FALSE) {
         modalDialog(
-            fileInput("dataset_attempt", "Choose a dataset in CSV format",
+            fileInput("dataset_attempt", "Please upload a dataset in CSV format",
                       multiple = FALSE,
                       accept = c('text/csv',
                                  'text/comma-separated-values,text/plain',
@@ -198,6 +263,9 @@ server <- function(input, output, session) {
         )
     }
     showModal(dataModal())
+    observeEvent(input$new_data, {
+      showModal(dataModal())
+    })
  
     observeEvent(input$ok, {
         t <- try(read.csv(input$dataset_attempt$datapath))
@@ -205,11 +273,10 @@ server <- function(input, output, session) {
             showModal(dataModal(failed = TRUE))
         } else {
             vals$dataset <- read.csv(input$dataset_attempt$datapath)
-            updateSelectizeInput(session, inputId = 'summary_in',
-                               
+            updateSelectizeInput(session, 'summary_in',
                                 choices = colnames(vals$dataset),
                                 selected = colnames(vals$dataset)[1],server = TRUE)
-            updateSelectizeInput(session,  "bivariate_x",
+            updateSelectizeInput(session, "bivariate_x",
                                  label = "x-axis",
                                  choices = colnames(vals$dataset),
                                  selected = colnames(vals$dataset)[1], server = TRUE)
@@ -223,24 +290,29 @@ server <- function(input, output, session) {
                                  selected = colnames(vals$dataset)[1], server = TRUE)
             updateSelectizeInput(session, "trivariate_y",
                                  label = "y-axis",
-                                 choices = colnames(vals$dataset), server = TRUE)
+                                 choices = colnames(vals$dataset),
+                                 selected = colnames(vals$dataset)[1], server = TRUE)
             updateSelectizeInput(session, "trivariate_z",
                                  label = "z-axis",
-                                 choices = colnames(vals$dataset), server = TRUE)
+                                 choices = colnames(vals$dataset),
+                                 selected = colnames(vals$dataset)[1], server = TRUE)
+            updatePickerInput(session, 'predictor',
+                              choices = colnames(vals$dataset),
+                              selected = colnames(vals$dataset)[-1])
+            updateNumericInput(session, 'interaction',
+                               min = 1, max = ncol(vals$dataset))
             removeModal()
         }
     })
     
-    
-    
     eda_summary <- function(par) {
         if (is.numeric(par)) {
-            data.frame('Min.' = min(par, na.rm = T),
-                       'Mean' = mean(par, na.rm = T),
-                       'Max.' = max(par, na.rm = T),
-                       '1st Qu' = quantile(par, 0.25, na.rm = T),
-                       'Median' = median(par, na.rm = T),
-                       '3rd Qu' = quantile(par, 0.75, na.rm = T),
+            data.frame('Min.' = round(min(par, na.rm = T), digits = 3),
+                       'Mean' = round(mean(par, na.rm = T),digits = 3),
+                       'Max.' = round(max(par, na.rm = T),digits = 3),
+                       '1st Qu' = round(quantile(par, 0.25, na.rm = T),digits = 3),
+                       'Median' = round(median(par, na.rm = T),digits = 3),
+                       '3rd Qu' = round(quantile(par, 0.75, na.rm = T),digits = 3),
                        check.names = F)
         } else if (is.factor(par)) {
             data.frame('Level' = names(summary(par)),
@@ -248,9 +320,7 @@ server <- function(input, output, session) {
         } else {
             data.frame('Sorry' = 'No summary for this type of variable')
         }
-        
     }
-    
     
     output$numeric_out <- DT::renderDataTable({
         DT::datatable({
@@ -282,17 +352,18 @@ server <- function(input, output, session) {
         geom_density(fill = "#C0C0C0") + 
         labs(x = input$summary_in) +
         theme_bw(base_size = 15) + 
-        theme(panel.grid.major = element_blank(), panel.grid.minor = element_blank())
+        theme(panel.grid.major = element_blank(), 
+              panel.grid.minor = element_blank())
     })
     
     output$bi_plot_out <- renderPlot({
       ggplot(data = vals$dataset, aes(x = vals$dataset[,input$bivariate_x],
                                       y = vals$dataset[,input$bivariate_y])) +
         geom_point(color = "black") + 
-        labs(x = input$bivariate_x, y = input$bivariate_y) +
+        labs(x = input$bivariate_x, 
+             y = input$bivariate_y) +
         theme_bw(base_size = 15)
     })
-    
     
     output$tri_plot_out <- threejs::renderScatterplotThree({
       dat <- cbind(vals$dataset[,input$trivariate_x],
@@ -305,10 +376,30 @@ server <- function(input, output, session) {
                                            input$trivariate_z))
     })
     
+    source('coef_plot.R', local = TRUE)
+    reg_result <- eventReactive(input$reg,{
+      reg(df = vals$dataset, model = input$model, formula = input$formula,
+          response = input$response, 
+          predictors = which(colnames(vals$dataset)%in% input$predictor), 
+          interactions = input$interaction,
+          lambda0 = seq(input$lambda[1], input$lambda[2], length.out = 300))
+    })
     
-    
-    
-    
+    observeEvent(input$reg, {
+      output$coef_plot <- renderPlot({
+        plot(reg_result, x_axis =  input$x_axis)
+      })
+      output$df_re <- DT::renderDataTable({
+        DT::datatable(print(reg_result, nshow = input$nshow_re),
+                      options = list(searchHighlight = TRUE,
+                                     lengthMenu = c(5, 10, 20)))
+      })
+      output$df_su <- DT::renderDataTable({
+        DT::datatable(summary(reg_result, nshow = input$nshow_su),
+                      options = list(searchHighlight = TRUE))
+      })
+    })
+   
     output$intro <- renderUI({HTML("Welcome to XXX. This application serves the following functions:<br/>1. XXX<br/>2. XXX<br/>3. XXX")})
     
   
