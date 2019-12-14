@@ -46,12 +46,24 @@ ui <- navbarPage(theme = shinythemes::shinytheme('cosmo'),
                                       
                                       tabPanel(
                                           title = 'Histogram',
-                                          plotOutput('hist_plot_out', height = '250px')
+                                          fluidRow(
+                                            column(
+                                              width = 6,
+                                              offset = 3,
+                                              plotOutput('hist_plot_out', height = '500px', width = '500px')
+                                            )
+                                          )
                                       ),
                                       
                                       tabPanel(
                                           title = 'Density',
-                                          plotOutput('density_plot_out', height = '250px')
+                                          fluidRow(
+                                            column(
+                                              width = 6,
+                                              offset = 3,
+                                              plotOutput('density_plot_out', height = '500px', width = '500px')
+                                            )
+                                          )
                                       )
                                   )
                               ),
@@ -87,7 +99,14 @@ ui <- navbarPage(theme = shinythemes::shinytheme('cosmo'),
                                               )
                                           ),
                                           br(),
-                                          plotOutput('bi_plot_out', height = '250px')
+                                          fluidRow(
+                                            column(
+                                              width = 6,
+                                              offset = 3,
+                                              plotOutput('bi_plot_out', height = '500px' ,width = '500px')
+                                            )
+                                          )
+                                          
                                       ),
                                       
                                       tabPanel(
