@@ -156,8 +156,8 @@ ui <- navbarPage(theme = shinythemes::shinytheme('cosmo'),
                                                      placeholder = 'Y ~ a + b + c')
                                          ),
                                          conditionalPanel(condition = "input.type == 'Components'",
-                                                          textInput('response', 'Response: (variable name or column index)',
-                                                                    placeholder = 'e.g.: 1 or Petal.length'),
+                                                          selectInput('response', 'Response:', 
+                                                                      choices = 1),
                                                           pickerInput('predictor', 'Predictors:', 
                                                                       choices = 1, options = list(`actions-box` = TRUE),
                                                                       multiple = T),
@@ -296,6 +296,9 @@ server <- function(input, output, session) {
                                  label = "z-axis",
                                  choices = colnames(vals$dataset),
                                  selected = colnames(vals$dataset)[1], server = TRUE)
+            updateSelectInput(session, 'response', 
+                              choices = colnames(vals$dataset),
+                              selected = colnames(vals$dataset)[1])
             updatePickerInput(session, 'predictor',
                               choices = colnames(vals$dataset),
                               selected = colnames(vals$dataset)[-1])
@@ -339,7 +342,7 @@ server <- function(input, output, session) {
     
     output$hist_plot_out <- renderPlot({
       ggplot(data = vals$dataset) + 
-        geom_histogram(aes(vals$dataset[,input$summary_in]), 
+        geom_histogram(aes(vals$dataset[,input$summary_in]), stat = 'count', 
                        fill = "#C0C0C0", color = "black") + 
         labs(x = input$summary_in) +
         theme_bw(base_size = 15) + 
@@ -387,15 +390,15 @@ server <- function(input, output, session) {
     
     observeEvent(input$reg, {
       output$coef_plot <- renderPlot({
-        plot(reg_result, x_axis =  input$x_axis)
+        plot(reg_result(), x_axis =  input$x_axis)
       })
       output$df_re <- DT::renderDataTable({
-        DT::datatable(print(reg_result, nshow = input$nshow_re),
+        DT::datatable(print(reg_result(), nshow = input$nshow_re),
                       options = list(searchHighlight = TRUE,
                                      lengthMenu = c(5, 10, 20)))
       })
       output$df_su <- DT::renderDataTable({
-        DT::datatable(summary(reg_result, nshow = input$nshow_su),
+        DT::datatable(summary(reg_result(), nshow = input$nshow_su),
                       options = list(searchHighlight = TRUE))
       })
     })
