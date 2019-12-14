@@ -1,0 +1,47 @@
+---
+title: "523 Final Project"
+author: "shiny-gold-scraper"
+date: "12/13/2019"
+output:
+  pdf_document: default
+  html_document: default
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+# Introduction
+
+In this project, we are going to write up a function `reg` which can be converted into a package to help with the process of ridge/lasso regression. Then we might construct, with the help of the function we designed, a shiny app to fit penalized linear regression models, such as Lasso and Ridge, to a dataset uploaded by the user, and more importantly to visualize the process of model fitting.
+
+# Function
+
+```{r, eval = F}
+
+```
+
+Specifically, our app serves the following functions:  
+1. Exploratory Data Analysis (EDA), which displays the numeric summary and statistical plots for individual variables from the dataset, together with scatter plots of both type bivariate and trivariate relationships amont different variables.  
+2. Regression part, which fits a penalized linear regression model to the uploaded dataset, with a range of parameters to adjust by users, such as model type (Ridge vs. Lasso), shrinkage parameter (well-known as lambda) range and interaction level. Moreover, this part visualizes the process of fitting the model, by displaying how coefficients are shrunk as shrinkage parameter changes and how the final coefficients are settled for a specific choice of lambda.  
+3. A series of other fuctions, such as a glossary to offer guidance to users.
+
+
+Note that the user need to upload a valid data frame object in CSV format in order to navigate into the main page of our shiny app.
+
+
+# EDA
+
+In this section, the user can obtain the basic summary information of each variable in the provided data set, including minimum value, mean value, maximum value and quantile values. Also, the user can obtain the histogram plot, density plot, bivariate scatter plot and trivariate scatter plot of the variables. This function can help the users to figure out the property of variables and the relationship between them, which will be useful to decide the regression formula later on.
+
+# Regression
+
+
+
+
+
+
+
+
+
+
