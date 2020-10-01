@@ -1,6 +1,6 @@
-# STA 523 :: Project
+# Visualization of Penalized Linear Regression
 
-This is our group final project on **Penalized Linear Regression**. 
+This is our group final project for course STA 523: Statistical Programming. The main goal is to visualize the implementation of **Penalized Linear Regression** using R. 
 
 Group members: Bo Liu, Mingxuan Yang, Jiawei Chen, Linlin Li.
 
